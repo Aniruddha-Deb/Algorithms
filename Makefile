@@ -1,21 +1,27 @@
 CC = gcc
 
 CFLAGS = -std=c99 -Wall -DDEBUG
-LDFLAGS = -lm
+LDFLAGS = -lSDL2 -lSDL2_ttf -lm
 
 OBJDIR = obj
+SRCDIR = src
+EXECDIR = bin
 
-DEPS = src/util/ds.h src/util/logger.h src/util/intgen.h
+PROG := None
+DEBUG := 0
 
-_OBJ = logger.o ds.o intgen.o intgentest.o
+_DEPS = util/ds.h util/logger.h util/intgen.h ui/SDL_util.h
+DEPS = $(patsubst %,$(SRCDIR)/%,$(_DEPS))
+
+_OBJ = util/logger.o util/ds.o util/intgen.o ui/SDL_util.o
 OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
-$(OBJDIR)/%.o: src/util/%.c $(DEPS)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-intgentest: $(OBJ) 
-	$(CC) $(OBJ) -o bin/intgentest $(LDFLAGS)
+default: $(OBJDIR)/$(PROG).o $(OBJ)
+	$(CC) $(OBJ) $(patsubst %,$(OBJDIR)/%.o,$(PROG)) -o $(patsubst %,$(EXECDIR)/%,$(PROG)) $(LDFLAGS)
 
 clean:
-	rm -f $(OBJDIR)/*
-	rm -f exec/*
+	rm -rf $(OBJDIR)/*
+	rm -rf $(EXECDIR)/*
