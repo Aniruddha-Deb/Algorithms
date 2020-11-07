@@ -12,6 +12,8 @@ typedef struct DataSet {
 	int xMax, yMax;
 	int xMin, yMin;
 	long xMean, yMean;
+	int xlb, ylb, xtr, ytr; // lb = lower bound, tr = tick range
+	int nxt, nyt; // number x/y ticks
 	char *name;
 } DataSet;
 

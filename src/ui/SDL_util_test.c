@@ -25,7 +25,8 @@ void line_test(SDL_Renderer *renderer) {
 
 int main(int argc, char **argv) {
 	DataSet *ds = new_DataSet("Test");
-	DataSet_add(ds, new_Point(5, 5));
-	DataSet_add(ds, new_Point(10, 3));
+	DataSet_add(ds, new_Point(52, 56));
+	DataSet_add(ds, new_Point(33, 21));
+	DataSet_add(ds, new_Point(42, 66));
 	plot(ds, "Title here");
 }

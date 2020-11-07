@@ -140,3 +140,15 @@ void SDL_RenderDrawDashedLine(SDL_Renderer *renderer, int x0, int y0, int x1, in
 		}
 	}
 }
+
+void SDL_RenderText(SDL_Renderer *renderer, int tlx, int tly, TTF_Font *font, const char* text) {
+	uint8_t r, g, b, a;
+	SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
+	SDL_Color color = {r, g, b, a};
+	SDL_Surface *surf = TTF_RenderText_Blended(font, text, color);
+	SDL_Rect textLoc = {tlx, tly, surf->w, surf->h};
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surf);
+	SDL_RenderCopy(renderer, texture, NULL, &textLoc);
+	SDL_FreeSurface(surf);
+	SDL_DestroyTexture(texture);
+}
