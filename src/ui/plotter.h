@@ -9,16 +9,20 @@ typedef struct Point {
 
 typedef struct DataSet {
 	ArrayList *ptList;
+	int xMax, yMax;
+	int xMin, yMin;
+	long xMean, yMean;
 	char *name;
 } DataSet;
 
-DataSet* new_DataSet(ArrayList *ptList, char *name);
+DataSet* new_DataSet(char *name);
 void destroy_DataSet(DataSet *ds);
+void DataSet_add(DataSet *ds, Point *pt);
 
 Point* new_Point(int x, int y);
 void destroy_Point(Point *p);
 
-void plot(DataSet *set);
-void plotAll(int nsets, DataSet **sets);
+int plot(DataSet *set, char *title);
+int plotAll(int nsets, DataSet **sets, char *title);
 
 #endif

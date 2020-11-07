@@ -1,4 +1,11 @@
 #include "SDL_util.h"
+#include "plotter.h"
+#include "../util/ds.h"
+#include <math.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 void circle_test(SDL_Renderer *renderer) {
 	for (int i=15; i<=150; i+=15) {
@@ -7,40 +14,18 @@ void circle_test(SDL_Renderer *renderer) {
 }
 
 void line_test(SDL_Renderer *renderer) {
-	for (int i=5, j=5; i<570; i+=30) {
-		SDL_RenderDrawDashedLine(renderer, i, j, i+30, j+i, 5, 5);
+	int r = 100;
+	for (double i=0; i<360; i+=9) {
+		// draw i degree line
+		printf("Drawing %d degree line\n", (int)i);
+		SDL_RenderDrawDashedLine(renderer, 300, 200, (int)(300+r*cos(M_PI*i/180)), 
+			(int)(200+r*sin(M_PI*i/180)), 10, 5);
 	}
 }
 
 int main(int argc, char **argv) {
-	if (init_graphics() == -1) return -1;
-	SDL_Window *win = create_SDL_window("Bresenham Circle Test", 600, 400);
-	if (win == NULL) return -1;
-
-	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-	const SDL_Rect screen = {0, 0, 600, 400};
-	SDL_RenderFillRect(renderer, &screen);
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-
-	line_test(renderer);
-	
-	SDL_RenderPresent(renderer);
-
-	SDL_Event e;
-	int quit = 1;
-	while (quit != 0) {
-		while (SDL_PollEvent(&e) != 0) {
-			if (e.type == SDL_QUIT) {
-				quit = 0;
-				break;
-			}
-		}
-	}
-	SDL_DestroyWindow(win);
-	TTF_Quit();
-	SDL_Quit();
-
-	return 0;
+	DataSet *ds = new_DataSet("Test");
+	DataSet_add(ds, new_Point(5, 5));
+	DataSet_add(ds, new_Point(10, 3));
+	plot(ds, "Title here");
 }

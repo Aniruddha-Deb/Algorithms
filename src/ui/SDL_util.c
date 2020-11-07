@@ -83,25 +83,60 @@ void SDL_RenderFillCircle(SDL_Renderer *renderer, int cx, int cy, int r) {
 	render_circle(renderer, cx, cy, r, true);
 }
 
+void swap(int *x, int *y) {
+	int temp = *x;
+	*x = *y;
+	*y = temp;
+}
+
 // Bresenham line algorithm
 // similar to SDL_RenderDrawLine: draws x0, y0 and does not draw x1, y1 (x0 <= L < x1)
 void SDL_RenderDrawDashedLine(SDL_Renderer *renderer, int x0, int y0, int x1, int y1, int dashlen, int blanklen) {
-	if (x1 < x0) {
-		int temp = x1;
-		x1 = x0;
-		x0 = temp;
+	int Dx = x1 - x0;
+	int Dy = y1 - y0;
+	// dirx, diry - direction of line
+	// the direction being iterated over is 1 or -1, and the other one is 0
+	int dirx = 0, diry = 0;
+	// incx, incy - increment of line
+	// the direction being iterated over is set to the same as dirx, while 
+	// the other one is 1, -1 or 0 depending on line direction.
+	int incx = 0, incy = 0;
+
+	// first find the variable we will be iterating over - X or Y
+	int longest = abs(Dx);
+	int shortest = abs(Dy);
+	if (longest < shortest) {
+		// We'll iterate over y, so swap longest and shortest and then set dir* 
+		// and inc* appropriately
+		swap(&longest, &shortest);
+		dirx = 0;
+		if (Dx < 0) incx = -1; else if (Dx > 0) incx = 1;
+		if (Dy < 0) diry = -1; else diry = 1;
+		incy = diry;
+	}
+	else {
+		// Iterating over x
+		diry = 0;
+		if (Dy < 0) incy = -1; else if (Dy > 0) incy = 1;
+		if (Dx < 0) dirx = -1; else dirx = 1;
+		incx = dirx;
 	}
 
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	int D = 2*dy - dx;
+	int err = 0;
+	int x = x0;
 	int y = y0;
-	for (int x=x0; x<x1; x++) {
+	for (int i=0; i<longest; i++) {
+		if (i%(dashlen+blanklen) < dashlen)
 			SDL_RenderDrawPoint(renderer, x, y);
-		if (D > 0) {
-			y++;
-			D -= 2*dx;
+		err += shortest;
+		if (2*(err+shortest) < longest) {
+			x += dirx;
+			y += diry;
 		}
-		D += 2*dy;
+		else {
+			err -= longest;
+			x += incx;
+			y += incy;
+		}
 	}
 }
