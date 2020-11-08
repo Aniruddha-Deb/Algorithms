@@ -102,7 +102,7 @@ void destroy_Point(Point *p) {
 int plot(DataSet *ds, char *title) {
 	// Standard SDL Application structure
 	if (init_graphics() == -1) return -1;
-	SDL_Window *win = create_SDL_window("Scatter Chart Plotter", WIDTH, HEIGHT);
+	SDL_Window *win = create_SDL_window(title, WIDTH, HEIGHT);
 	if (win == NULL) return -1;
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
