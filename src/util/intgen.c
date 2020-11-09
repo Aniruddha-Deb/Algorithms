@@ -114,9 +114,9 @@ void permute(int size, int *A, double inversions) {
 	}
 	A[size-1-left] = key;
 
-	#ifdef DEBUG
-	countInvs(size, A, invs);
-	#endif
+	//#ifdef DEBUG
+	//countInvs(size, A, invs);
+	//#endif
 }
 
 int* gen_ints(int size, int lb, int ub, double inversions) {

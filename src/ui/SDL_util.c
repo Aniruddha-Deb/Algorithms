@@ -1,4 +1,5 @@
 #include "SDL_util.h"
+#include "../util/gen.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -81,12 +82,6 @@ void SDL_RenderDrawCircle(SDL_Renderer *renderer, int cx, int cy, int r) {
 
 void SDL_RenderFillCircle(SDL_Renderer *renderer, int cx, int cy, int r) {
 	render_circle(renderer, cx, cy, r, true);
-}
-
-void swap(int *x, int *y) {
-	int temp = *x;
-	*x = *y;
-	*y = temp;
 }
 
 // Bresenham line algorithm

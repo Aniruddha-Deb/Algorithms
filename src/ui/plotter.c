@@ -36,7 +36,7 @@ const SDL_Color axisTextColor = {0x57, 0x57, 0x57, 0xFF};
 const SDL_Color gridColor = {0xBB, 0xBB, 0xBB, 0xFF};
 const SDL_Color labelColor = {0x32, 0x32, 0x32, 0xFF};
 const SDL_Color xAxisHighlightColor = {0x63, 0x63, 0x63, 0xFF};
-const SDL_Color pointBlueColor = {0x2A, 0x53, 0xDF, 0xFF};
+const SDL_Color pointBlueColor = {0x2A, 0x53, 0xDF, 0xCF};
 const SDL_Color pointOrangeColor = {0xF5, 0x61, 0x1E, 0xFF};
 const SDL_Color pointGreenColor = {0x53, 0xB8, 0x52, 0xFF};
 const SDL_Color pointYellowColor = {0xFD, 0xA8, 0x00, 0xFF};
@@ -234,6 +234,7 @@ int plot(DataSet *ds, char *title) {
 	if (win == NULL) return -1;
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, 0xFF);
 	const SDL_Rect screen = {0, 0, WIDTH, HEIGHT};
 	SDL_RenderFillRect(renderer, &screen);
