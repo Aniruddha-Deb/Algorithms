@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <math.h>
 #include <limits.h>
@@ -19,6 +20,16 @@
 #define YTICKS 10
 
 // constants
+// p_ = plot
+// br = bottom right
+// btl/stl = big/small tick length
+int p_tlx = 80; // round(0.1*WIDTH); // tl = top left
+int p_brx = 720; // round(0.9*WIDTH); // br = bottom right
+int p_tly = 30; // round(0.05*HEIGHT);
+int p_bry = 510; // round(0.85*HEIGHT);
+int p_btl = 9; // round(0.015*HEIGHT); // big tick length
+int p_stl = 6; // round(0.0075*HEIGHT); // small tick length
+
 const SDL_Color bgColor = {0xF4, 0xF4, 0xF4, 0xFF};
 const SDL_Color axisColor = {0xA5, 0xA5, 0xA5, 0xFF};
 const SDL_Color axisTextColor = {0x57, 0x57, 0x57, 0xFF};
@@ -30,17 +41,61 @@ const SDL_Color pointOrangeColor = {0xF5, 0x61, 0x1E, 0xFF};
 const SDL_Color pointGreenColor = {0x53, 0xB8, 0x52, 0xFF};
 const SDL_Color pointYellowColor = {0xFD, 0xA8, 0x00, 0xFF};
 
-// Function definitions used in this file
-void render_graph(SDL_Renderer *renderer);
-void render_pts(SDL_Renderer *renderer, ArrayList *ptList, SDL_Color *c);
+static int round_tr(double tr);
+
+typedef struct GridData {
+	int xlbound, ylbound, xtickrange, ytickrange;
+	int numxticks, numyticks;
+} GridData;
+
+GridData* new_GridData(int numxticks, int numyticks, int numdsets, ...) {
+	GridData *gd = malloc(sizeof(GridData));
+	gd->numxticks = numxticks;
+	gd->numyticks = numyticks;
+	
+	va_list dsets;
+	va_start(dsets, numdsets);
+	int xMax, yMax, xMin, yMin;
+	xMax = yMax = INT_MIN;
+	xMin = yMin = INT_MAX;
+	for (int i=0; i<numdsets; i++) {
+		DataSet *ds = va_arg(dsets, DataSet*);
+		if (ds->xMax > xMax) xMax = ds->xMax;
+		if (ds->yMax > yMax) yMax = ds->yMax;
+		if (ds->xMin < xMin) xMin = ds->xMin;
+		if (ds->yMin < yMin) yMin = ds->yMin;
+	}
+	if (xMin != xMax) {
+		double range = xMax - xMin;
+		gd->xtickrange = round_tr(range/numxticks);
+		gd->xlbound = gd->xtickrange*floor(((double)xMin)/gd->xtickrange);
+	}
+	else {
+		// x is constant
+		log_debug("TODO: implement x constant logic\n");
+	}
+
+	if (yMin != yMax) {
+		double range = yMax - yMin;
+		gd->ytickrange = round_tr(range/numyticks);
+		gd->ylbound = gd->ytickrange*floor(((double)yMin)/gd->ytickrange);
+	}
+	else {
+		// y is constant
+		log_debug("TODO: implement y constant logic\n");
+	}
+	return gd;
+}
+
+void destroy_GridData(GridData *gd) {
+	free(gd);
+}
 
 DataSet* new_DataSet(char *name) {
 	DataSet *ds = malloc(sizeof(DataSet));
 	ds->ptList = new_ArrayList();
 	ds->xMax = ds->yMax = INT_MIN;
 	ds->xMin = ds->yMin = INT_MAX;
-	ds->nxt = XTICKS;
-	ds->nyt = YTICKS;
 	ds->name = name;
 	return ds;
 }
@@ -73,19 +128,6 @@ void DataSet_add(DataSet *ds, Point *pt) {
 	if (pt->y < ds->yMin) ds->yMin = pt->y; 
 	ds->xMean = (ds->xMean*ds->ptList->head + pt->x)/(ds->ptList->head+1);
 	ds->yMean = (ds->yMean*ds->ptList->head + pt->y)/(ds->ptList->head+1);
-
-	// recalculate ticks
-	if (ds->xMin != ds->xMax) {
-		double range = ds->xMax - ds->xMin;
-		ds->xtr = round_tr(range/ds->nxt);
-		ds->xlb = ds->xtr*floor(((double)ds->xMin)/ds->xtr);
-	}
-	if (ds->yMin != ds->yMax) {
-		double range = ds->yMax - ds->yMin;
-		ds->ytr = round_tr(range/ds->nyt);
-		ds->ylb = ds->ytr*floor(((double)ds->yMin)/ds->ytr);
-		log_debug("Recalculated y lower bound as %d\n", ds->ylb);
-	}
 }
 
 Point* new_Point(int x, int y) {
@@ -99,6 +141,92 @@ void destroy_Point(Point *p) {
 	free(p);
 }
 
+void render_tick_number(SDL_Renderer *renderer, TTF_Font *font, int num, Point *tickpos, bool alongY) {
+	SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
+	int textwidth=0, textheight=0;
+	char *s = malloc(sizeof(char)*15);
+	snprintf(s, 15, "%d", num);
+	TTF_SizeText(font, s, &textwidth, &textheight);
+	if (alongY) {
+		SDL_RenderText(renderer, tickpos->x-textwidth-p_btl-4, round(tickpos->y-((double)textheight)/2),
+					   font, s);
+	}
+	else {
+		SDL_RenderText(renderer, round(tickpos->x-((double)textwidth)/2), tickpos->y+p_btl+4,
+					   font, s);
+	}
+	free(s);
+}
+
+void render_plot(SDL_Renderer *renderer, GridData *gd) {
+	// draw axes; note the subpixel correct rendering
+	SDL_SetRenderDrawColor(renderer, gridColor.r, gridColor.g, gridColor.b, gridColor.a);
+	double xtickwidth = round((double)(p_brx-p_tlx)/gd->numxticks);
+	double ytickwidth = round((double)(p_bry-p_tly)/gd->numyticks);
+	// gridlines
+	// notice cleverly placed +1's - SDL does not draw the last point in the line
+	for (int i=1; i<gd->numyticks; i++) {
+		int y = round(p_bry - ytickwidth*i -1);
+		SDL_RenderDrawDashedLine(renderer, p_tlx, y, p_brx+1, y, 10, 5);
+	}
+	for (int i=1; i<gd->numxticks; i++) {
+		int x = round(xtickwidth*i + p_tlx);
+		SDL_RenderDrawDashedLine(renderer, x, p_tly, x, p_bry+1, 10, 5);
+	}
+	// axes
+	SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
+	SDL_RenderDrawLine(renderer, p_tlx, p_tly, p_tlx, p_bry+1);
+	SDL_RenderDrawLine(renderer, p_tlx, p_bry, p_brx+1, p_bry);
+	// markings and text
+	TTF_Font *opensans_12pt = TTF_OpenFont("res/fonts/OpenSans-Regular.ttf", 12);
+	for (int i=0; i<=gd->numxticks; i++) {
+		if (i != gd->numxticks) {
+			for (int j=1; j<5; j++) {
+				int x = round(p_tlx+xtickwidth*(i+0.2*j));
+				SDL_RenderDrawLine(renderer, x, p_bry, x, p_bry+p_stl);
+			}
+		}
+		int x = round(p_tlx + xtickwidth*i);
+		SDL_RenderDrawLine(renderer, x, p_bry, x, p_bry+p_btl);
+		int num = gd->xlbound + i*gd->xtickrange;
+		Point tickpos = {x, p_bry};
+		render_tick_number(renderer, opensans_12pt, num, &tickpos, false);
+		SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
+	}
+	for (int i=0; i<=gd->numyticks; i++) {
+		if (i != gd->numyticks) {
+			for (int j=1; j<5; j++) {
+				int y = round(p_bry-ytickwidth*(i+0.2*j));
+				SDL_RenderDrawLine(renderer, p_tlx, y, p_tlx-p_stl, y);
+			}
+		}
+		int y = round(p_bry-ytickwidth*i-1);
+		SDL_RenderDrawLine(renderer, p_tlx, y, p_tlx-p_btl, y);
+		SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
+		int num = gd->ylbound + i*gd->ytickrange;
+		Point tickpos = {p_tlx, y};
+		render_tick_number(renderer, opensans_12pt, num, &tickpos, true);
+		SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
+	}
+	TTF_CloseFont(opensans_12pt);
+	// x axis highlight
+	SDL_SetRenderDrawColor(renderer, xAxisHighlightColor.r, xAxisHighlightColor.b, xAxisHighlightColor.g, xAxisHighlightColor.a);
+	SDL_RenderDrawLine(renderer, p_tlx, p_bry-1, p_brx+1, p_bry-1);
+}
+
+void render_points(SDL_Renderer *renderer, DataSet *ds, GridData *gd) {
+	SDL_SetRenderDrawColor(renderer, pointBlueColor.r, pointBlueColor.g, pointBlueColor.b, pointBlueColor.a);
+	for (int i=0; i<ds->ptList->head; i++) {
+		Point *p = ds->ptList->data[i];
+		int px = p->x;
+		int py = p->y;
+		int x = p_tlx + round((double)(p_brx-p_tlx)*(px-gd->xlbound)/(gd->xtickrange*gd->numxticks));
+		int y = p_bry - round((double)(p_bry-p_tly)*(py-gd->ylbound)/(gd->ytickrange*gd->numyticks));
+		log_debug("Point to plot for (%d,%d) is (%d,%d)\n",px,py,x,y);
+		SDL_RenderFillCircle(renderer, x, y, 5);
+	}
+}
+
 int plot(DataSet *ds, char *title) {
 	// Standard SDL Application structure
 	if (init_graphics() == -1) return -1;
@@ -110,85 +238,9 @@ int plot(DataSet *ds, char *title) {
 	const SDL_Rect screen = {0, 0, WIDTH, HEIGHT};
 	SDL_RenderFillRect(renderer, &screen);
 
-	// draw axes; note the subpixel correct rendering
-	SDL_SetRenderDrawColor(renderer, gridColor.r, gridColor.g, gridColor.b, gridColor.a);
-	int tlx = round(0.1*WIDTH);
-	int brx = round(0.9*WIDTH);
-	int tly = round(0.05*HEIGHT);
-	int bry = round(0.85*HEIGHT);
-	int lmark = round(0.015*HEIGHT);
-	int smark = round(0.0075*HEIGHT);
-	double th = (0.8/ds->nyt)*HEIGHT;
-	double tw = (0.8/ds->nxt)*WIDTH;
-	// gridlines
-	for (int i=1; i<ds->nyt; i++) {
-		int y = round(bry - th*i -1);
-		SDL_RenderDrawDashedLine(renderer, tlx, y, brx, y, 10, 10);
-	}
-	for (int i=1; i<ds->nxt; i++) {
-		int x = round(tw*i + tlx);
-		SDL_RenderDrawDashedLine(renderer, x, tly, x, bry, 10, 10);
-	}
-	// axes
-	SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
-	SDL_RenderDrawLine(renderer, tlx, tly, tlx, bry);
-	SDL_RenderDrawLine(renderer, tlx, bry, brx, bry);
-	// markings and text
-	TTF_Font *opensans_12pt = TTF_OpenFont("res/fonts/OpenSans-Regular.ttf", 12);
-	SDL_RenderDrawLine(renderer, tlx, bry, tlx, bry+lmark);
-	for (int i=0; i<ds->nxt; i++) {
-		for (int j=1; j<5; j++) {
-			int x = round(tlx+tw*(i+0.2*j));
-			SDL_RenderDrawLine(renderer, x, bry, x, bry+smark);
-		}
-		int x = round(tlx + tw*(i+1));
-		SDL_RenderDrawLine(renderer, x, bry, x, bry+lmark);
-		SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
-		int tw=0, th=0;
-		int num = ds->xlb + (i+1)*ds->xtr;
-		char *s = malloc(sizeof(char)*15);
-		snprintf(s, 15, "%d", num);
-		if (opensans_12pt != NULL)
-		TTF_SizeText(opensans_12pt, s, &tw, &th);
-		else log_debug("Could not load font\n");
-		SDL_RenderText(renderer, round(x-((double)tw)/2), bry+lmark+smark,
-					   opensans_12pt, s);
-		SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
-	}
-	SDL_RenderDrawLine(renderer, tlx, bry, tlx-lmark, bry);
-	for (int i=0; i<ds->nyt; i++) {
-		for (int j=1; j<5; j++) {
-			int y = round(bry-th*(i+0.2*j));
-			SDL_RenderDrawLine(renderer, tlx, y, tlx-smark, y);
-		}
-		int y = round(bry-th*(i+1)-1);
-		SDL_RenderDrawLine(renderer, tlx, y, tlx-lmark, y);
-		SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
-		int tw=0, th=0;
-		int num = ds->ylb + (i+1)*ds->ytr;
-		char *s = malloc(sizeof(char)*15);
-		snprintf(s, 15, "%d", num);
-		if (opensans_12pt != NULL)
-		TTF_SizeText(opensans_12pt, s, &tw, &th);
-		else log_debug("Could not load font\n");
-		SDL_RenderText(renderer, tlx-tw-lmark-smark, round(y-((double)th)/2),
-					   opensans_12pt, s);
-		SDL_SetRenderDrawColor(renderer, axisColor.r, axisColor.g, axisColor.b, axisColor.a);
-	}
-	// x axis highlight
-	SDL_SetRenderDrawColor(renderer, xAxisHighlightColor.r, xAxisHighlightColor.b, xAxisHighlightColor.g, xAxisHighlightColor.a);
-	SDL_RenderDrawLine(renderer, tlx, bry-1, brx, bry-1);
-	// points
-	SDL_SetRenderDrawColor(renderer, pointBlueColor.r, pointBlueColor.g, pointBlueColor.b, pointBlueColor.a);
-	for (int i=0; i<ds->ptList->head; i++) {
-		Point *p = ds->ptList->data[i];
-		int px = p->x;
-		int py = p->y;
-		int x = tlx + round((double)(brx-tlx)*(px-ds->xlb)/(ds->xtr*ds->nxt));
-		int y = bry - round((double)(bry-tly)*(py-ds->ylb)/(ds->ytr*ds->nyt));
-		log_debug("Point to plot for (%d,%d) is (%d,%d)\n",px,py,x,y);
-		SDL_RenderFillCircle(renderer, x, y, 5);
-	}
+	GridData *gd = new_GridData(XTICKS, YTICKS, 1, ds);
+	render_plot(renderer, gd);
+	render_points(renderer, ds, gd);
 	SDL_RenderPresent(renderer);
 
 	SDL_Event e;
