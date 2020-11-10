@@ -1,7 +1,7 @@
 CC = gcc
 
-CFLAGS = -std=c99 -Wall -DDEBUG
-LDFLAGS = -lSDL2 -lSDL2_ttf -lm
+CFLAGS = -std=c99 -Wall -O3 -DDEBUG
+LDFLAGS = -O3 -lSDL2 -lSDL2_ttf -lm
 
 OBJDIR = obj
 SRCDIR = src

@@ -44,7 +44,7 @@ void insertion_sort(int n, int *A) {
 			A[j+1] = A[j];
 			j--;
 		}
-		A[j] = k;
+		A[j+1] = k;
 	}
 }
 

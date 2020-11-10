@@ -1,5 +1,6 @@
 #include "color.h"
 #include "../util/intgen.h"
+#include "../util/logger.h"
 #include <math.h>
 
 #include <SDL2/SDL.h>
@@ -10,7 +11,7 @@ typedef struct RGBColor {
 
 static SDL_Color* HSV_to_RGB(int h, double s, double v, int a) {
 	double c = s*v;
-	double hh = (h%360)/60;
+	double hh = (double)(h%360)/60;
 	double x = c*(1 - fabs(fmod(hh, 2) - 1));
 	RGBColor color;
 	
@@ -29,7 +30,13 @@ static SDL_Color* HSV_to_RGB(int h, double s, double v, int a) {
 	return intColor;
 }
 
+int h = -1;
+
 SDL_Color* gen_random_color(double s, double v, int a) {
-	int h = gen_int(0, 360);
+	if (h == -1) 
+		h = gen_int(0, 360);
+	else
+		h += 223; // ((golden ratio - 1) * 360);
+	log_debug("Random int generated is %d\n", h);
 	return HSV_to_RGB(h, s, v, a);
 }

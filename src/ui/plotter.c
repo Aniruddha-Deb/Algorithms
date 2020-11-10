@@ -221,7 +221,7 @@ void render_points(SDL_Renderer *renderer, DataSet *ds, GridData *gd, SDL_Color 
 		int py = p->y;
 		int x = p_tlx + round((double)(p_brx-p_tlx)*(px-gd->xlbound)/(gd->xtickrange*gd->numxticks));
 		int y = p_bry - round((double)(p_bry-p_tly)*(py-gd->ylbound)/(gd->ytickrange*gd->numyticks));
-		log_debug("Point to plot for (%d,%d) is (%d,%d)\n",px,py,x,y);
+		//log_debug("Point to plot for (%d,%d) is (%d,%d)\n",px,py,x,y);
 		SDL_RenderFillCircle(renderer, x, y, 5);
 	}
 }
@@ -239,17 +239,18 @@ void render_keys(SDL_Renderer *renderer, int nkeys, DataKey **keys) {
 	int k_width = 0;
 	int *widths = malloc(sizeof(int)*nkeys);
 	int height;
+	int pw = 0;
 	for (int i=0; i<nkeys; i++) {
 		// measure up size of bounding box
 		TTF_SizeText(opensans_16pt, keys[i]->name, &widths[i], &height);
+		pw = k_width;
 		k_width += (3*padding + 8 + widths[i]);
+		widths[i] = pw;
 	}
-	int k_tlx = WIDTH/2 - (k_width/2);
+	int k_tlx = WIDTH/2 - k_width/2;
 	for (int i=0; i<nkeys; i++) {
-		int x = k_tlx + i*widths[i];
-		log_debug("Color is (%d, %d, %d, %d)\n", keys[i]->color->r, keys[i]->color->g, keys[i]->color->b, keys[i]->color->a);
+		int x = k_tlx + widths[i];
 		SDL_SetRenderDrawColor(renderer, keys[i]->color->r, keys[i]->color->g, keys[i]->color->b, keys[i]->color->a);
-		//SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
 		SDL_RenderFillCircle(renderer, x+4, k_tly+(height/2), 4);
 		SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
 		SDL_RenderText(renderer, x+12, k_tly, opensans_16pt, keys[i]->name);
@@ -322,6 +323,7 @@ int plotAll(int nsets, DataSet **sets, char *title) {
 	}
 	render_keys(renderer, nsets, keys);
 	for (int i=0; i<nsets; i++) {
+		free(keys[i]->color);
 		free(keys[i]);
 	}
 	free(keys);

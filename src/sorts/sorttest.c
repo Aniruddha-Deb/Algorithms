@@ -26,7 +26,8 @@ int main(int argc, char **argv) {
 		ArrayList_add(dataList, new_DataSet(s->name));
 	}
 	bool err = false;
-	for (int c=50; c<=200; c+=50) {
+	
+	for (int c=50; c<=5000; c+=50) {
 		log_debug("Creating random array of size %d\n", c);
 		int *ranarr = gen_ints(c, LBOUND, UBOUND, 0.8);
 		for (int i=0; i<sortList->head; i++) {
@@ -55,7 +56,7 @@ int main(int argc, char **argv) {
 		if (err) break;
 	}
 	if (!err) {
-		plotAll(dataList->head, (DataSet**)dataList->data, "Sorts - Time (ms) vs Array Size");
+		plotAll(dataList->head, (DataSet**)dataList->data, "Sorts - Time (us) vs Array Size");
 	}
 	for (int i=0; i<sortList->head; i++) {
 		destroy_Sort(sortList->data[i]);
@@ -63,5 +64,6 @@ int main(int argc, char **argv) {
 	}
 	destroy_ArrayList(sortList);
 	destroy_ArrayList(dataList);
+	
 	return 0;
 }
