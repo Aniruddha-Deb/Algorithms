@@ -2,6 +2,18 @@
 #include "../util/gen.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
+
+Sort* new_Sort(char *name, void (*sort)(int, int*)) {
+	Sort *s = malloc(sizeof(Sort));
+	s->name = name;
+	s->sort = sort;
+	return s;
+}
+
+void destroy_Sort(Sort *sort) {
+	free(sort);
+}
 
 void selection_sort(int n, int *A) {
 	for (int i=0; i<n; i++) {
@@ -27,9 +39,9 @@ void bubble_sort(int n, int *A) {
 void insertion_sort(int n, int *A) {
 	for (int i=0; i<n; i++) {
 		int k = A[i];
-		int j = i;
-		while (j>0 && k < A[j]) {
-			A[j] = A[j-1];
+		int j = i-1;
+		while (j>=0 && k < A[j]) {
+			A[j+1] = A[j];
 			j--;
 		}
 		A[j] = k;

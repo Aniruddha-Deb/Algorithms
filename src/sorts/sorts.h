@@ -3,6 +3,14 @@
 
 #include <stdbool.h>
 
+typedef struct Sort {
+	char *name;
+	void (*sort)(int, int*);
+} Sort;
+
+Sort* new_Sort(char *name, void (*sort)(int, int*));
+void destroy_Sort(Sort *sort);
+
 void selection_sort(int n, int *A);
 void bubble_sort(int n, int *A);
 void insertion_sort(int n, int *A);

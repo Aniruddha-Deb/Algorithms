@@ -1,4 +1,5 @@
 #include "plotter.h"
+#include "color.h"
 #include "../util/ds.h"
 #include "../util/logger.h"
 #include "SDL_util.h"
@@ -48,18 +49,16 @@ typedef struct GridData {
 	int numxticks, numyticks;
 } GridData;
 
-GridData* new_GridData(int numxticks, int numyticks, int numdsets, ...) {
+GridData* new_GridData(int numxticks, int numyticks, int numdsets, DataSet **sets) {
 	GridData *gd = malloc(sizeof(GridData));
 	gd->numxticks = numxticks;
 	gd->numyticks = numyticks;
 	
-	va_list dsets;
-	va_start(dsets, numdsets);
 	int xMax, yMax, xMin, yMin;
 	xMax = yMax = INT_MIN;
 	xMin = yMin = INT_MAX;
 	for (int i=0; i<numdsets; i++) {
-		DataSet *ds = va_arg(dsets, DataSet*);
+		DataSet *ds = sets[i];
 		if (ds->xMax > xMax) xMax = ds->xMax;
 		if (ds->yMax > yMax) yMax = ds->yMax;
 		if (ds->xMin < xMin) xMin = ds->xMin;
@@ -214,8 +213,8 @@ void render_plot(SDL_Renderer *renderer, GridData *gd) {
 	SDL_RenderDrawLine(renderer, p_tlx, p_bry-1, p_brx+1, p_bry-1);
 }
 
-void render_points(SDL_Renderer *renderer, DataSet *ds, GridData *gd) {
-	SDL_SetRenderDrawColor(renderer, pointBlueColor.r, pointBlueColor.g, pointBlueColor.b, pointBlueColor.a);
+void render_points(SDL_Renderer *renderer, DataSet *ds, GridData *gd, SDL_Color *color) {
+	SDL_SetRenderDrawColor(renderer, color->r, color->g, color->b, color->a);
 	for (int i=0; i<ds->ptList->head; i++) {
 		Point *p = ds->ptList->data[i];
 		int px = p->x;
@@ -225,6 +224,37 @@ void render_points(SDL_Renderer *renderer, DataSet *ds, GridData *gd) {
 		log_debug("Point to plot for (%d,%d) is (%d,%d)\n",px,py,x,y);
 		SDL_RenderFillCircle(renderer, x, y, 5);
 	}
+}
+
+int k_tly = 0.9*HEIGHT;
+
+typedef struct DataKey {
+	SDL_Color *color;
+	char *name;
+} DataKey;
+
+void render_keys(SDL_Renderer *renderer, int nkeys, DataKey **keys) {
+	TTF_Font *opensans_16pt = TTF_OpenFont("res/fonts/OpenSans-Regular.ttf", 16);
+	int padding = 4;
+	int k_width = 0;
+	int *widths = malloc(sizeof(int)*nkeys);
+	int height;
+	for (int i=0; i<nkeys; i++) {
+		// measure up size of bounding box
+		TTF_SizeText(opensans_16pt, keys[i]->name, &widths[i], &height);
+		k_width += (3*padding + 8 + widths[i]);
+	}
+	int k_tlx = WIDTH/2 - (k_width/2);
+	for (int i=0; i<nkeys; i++) {
+		int x = k_tlx + i*widths[i];
+		log_debug("Color is (%d, %d, %d, %d)\n", keys[i]->color->r, keys[i]->color->g, keys[i]->color->b, keys[i]->color->a);
+		SDL_SetRenderDrawColor(renderer, keys[i]->color->r, keys[i]->color->g, keys[i]->color->b, keys[i]->color->a);
+		//SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+		SDL_RenderFillCircle(renderer, x+4, k_tly+(height/2), 4);
+		SDL_SetRenderDrawColor(renderer, axisTextColor.r, axisTextColor.g, axisTextColor.b, axisTextColor.a);
+		SDL_RenderText(renderer, x+12, k_tly, opensans_16pt, keys[i]->name);
+	}
+	TTF_CloseFont(opensans_16pt);
 }
 
 int plot(DataSet *ds, char *title) {
@@ -239,9 +269,18 @@ int plot(DataSet *ds, char *title) {
 	const SDL_Rect screen = {0, 0, WIDTH, HEIGHT};
 	SDL_RenderFillRect(renderer, &screen);
 
-	GridData *gd = new_GridData(XTICKS, YTICKS, 1, ds);
+	GridData *gd = new_GridData(XTICKS, YTICKS, 1, &ds);
 	render_plot(renderer, gd);
-	render_points(renderer, ds, gd);
+	SDL_Color *plotColor = gen_random_color(0.5, 0.95, 0xCF);
+	render_points(renderer, ds, gd, plotColor);
+	DataKey *key = malloc(sizeof(DataKey));
+	key->color = plotColor;
+	key->name = ds->name;
+	log_debug("Renderer Color is (%d, %d, %d, %d)\n", plotColor->r, plotColor->g, plotColor->b, plotColor->a);
+	render_keys(renderer, 1, &key);
+	free(plotColor);
+	free(key);
+	destroy_GridData(gd);
 	SDL_RenderPresent(renderer);
 
 	SDL_Event e;
@@ -261,6 +300,46 @@ int plot(DataSet *ds, char *title) {
 }
 
 int plotAll(int nsets, DataSet **sets, char *title) {
-	// plot all here
+	if (init_graphics() == -1) return -1;
+	SDL_Window *win = create_SDL_window(title, WIDTH, HEIGHT);
+	if (win == NULL) return -1;
+
+	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, 0xFF);
+	const SDL_Rect screen = {0, 0, WIDTH, HEIGHT};
+	SDL_RenderFillRect(renderer, &screen);
+
+	GridData *gd = new_GridData(XTICKS, YTICKS, nsets, sets);
+	DataKey **keys = malloc(sizeof(DataKey*)*nsets);
+	render_plot(renderer, gd);
+	for (int i=0; i<nsets; i++) {
+		SDL_Color *plotColor = gen_random_color(0.5, 0.95, 0xCF);
+		keys[i] = malloc(sizeof(DataKey));
+		keys[i]->color = plotColor;
+		keys[i]->name = sets[i]->name;
+		render_points(renderer, sets[i], gd, plotColor);
+	}
+	render_keys(renderer, nsets, keys);
+	for (int i=0; i<nsets; i++) {
+		free(keys[i]);
+	}
+	free(keys);
+	destroy_GridData(gd);
+	SDL_RenderPresent(renderer);
+
+	SDL_Event e;
+	bool quit = false;
+	while (!quit) {
+		while (SDL_PollEvent(&e) != 0) {
+			if (e.type == SDL_QUIT) {
+				quit = true;
+				break;
+			}
+		}
+	}
+	SDL_DestroyWindow(win);
+	TTF_Quit();
+	SDL_Quit();
 	return 0;
 }

@@ -14,20 +14,27 @@
 #define UBOUND 50000
 
 int main(int argc, char **argv) {
-	
+	srandom(time(NULL));
 	ArrayList *sortList = new_ArrayList();
-	ArrayList_add(sortList, &(selection_sort));
+	ArrayList_add(sortList, new_Sort("Selection Sort", &selection_sort));
+	ArrayList_add(sortList, new_Sort("Insertion Sort", &insertion_sort));
+	ArrayList_add(sortList, new_Sort("Bubble Sort", &bubble_sort));
 
-	DataSet *ds = new_DataSet("Selection Sort");
+	ArrayList *dataList = new_ArrayList();
+	for (int i=0; i<sortList->head; i++) {
+		Sort *s = sortList->data[i];
+		ArrayList_add(dataList, new_DataSet(s->name));
+	}
 	bool err = false;
-	for (int c=50; c<=5000; c+=50) {
+	for (int c=50; c<=200; c+=50) {
 		log_debug("Creating random array of size %d\n", c);
 		int *ranarr = gen_ints(c, LBOUND, UBOUND, 0.8);
 		for (int i=0; i<sortList->head; i++) {
 			log_debug("allocating array of size %d\n", c);
 			int *arr = malloc(sizeof(int)*c);
 			memcpy(arr, ranarr, c);
-			void (*sort)(int, int*) = ArrayList_get(sortList, i);
+			Sort *s = ArrayList_get(sortList, i);
+			void (*sort)(int, int*) = s->sort;
 			clock_t begin = clock();
 			(*sort)(c, arr);
 			clock_t end = clock();
@@ -39,7 +46,8 @@ int main(int argc, char **argv) {
 				break;
 			}
 			else {
-				DataSet_add(ds, new_Point(c, time_spent));
+				log_debug("Sort %d passed\n", i);
+				DataSet_add(dataList->data[i], new_Point(c, time_spent));
 			}
 			free(arr);
 		}
@@ -47,9 +55,13 @@ int main(int argc, char **argv) {
 		if (err) break;
 	}
 	if (!err) {
-		plot(ds, "Selection Sort");
+		plotAll(dataList->head, (DataSet**)dataList->data, "Sorts - Time (ms) vs Array Size");
 	}
-	destroy_DataSet(ds);
+	for (int i=0; i<sortList->head; i++) {
+		destroy_Sort(sortList->data[i]);
+		destroy_DataSet(dataList->data[i]);
+	}
 	destroy_ArrayList(sortList);
+	destroy_ArrayList(dataList);
 	return 0;
 }

@@ -24,6 +24,7 @@ void line_test(SDL_Renderer *renderer) {
 }
 
 int main(int argc, char **argv) {
+	srandom(time(NULL));
 	DataSet *ds = new_DataSet("Test");
 	DataSet_add(ds, new_Point(50, 80287));
 	DataSet_add(ds, new_Point(100, 308221));

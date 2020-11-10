@@ -119,13 +119,16 @@ void permute(int size, int *A, double inversions) {
 	//#endif
 }
 
+int gen_int(int lb, int ub) {
+	return (int)(((double)random())/RANDOM_MAX*(ub-lb) + lb);
+}
+
 int* gen_ints(int size, int lb, int ub, double inversions) {
-	srandom(time(NULL));
 	IntPQ *ipq = new_IntPQ(lb, ub);
 	for (int i=0; i<size; i++) {
-		int rand = (int)(((double)random())/RANDOM_MAX*(ub-lb) + lb);  
+		int rand = gen_int(lb, ub);
 		while (get_bit(ipq->emap, rand-lb) > 0) {
-			rand = (int)(((double)random())/RANDOM_MAX*(ub-lb) + lb);
+			rand = gen_int(lb, ub);
 		} 
 		IntPQ_insert(ipq, rand);
 	}
