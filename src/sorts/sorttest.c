@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
 	ArrayList_add(sortList, new_Sort("Selection Sort", &selection_sort));
 	ArrayList_add(sortList, new_Sort("Insertion Sort", &insertion_sort));
 	ArrayList_add(sortList, new_Sort("Bubble Sort", &bubble_sort));
+	ArrayList_add(sortList, new_Sort("Merge Sort", &merge_sort));
 
 	ArrayList *dataList = new_ArrayList();
 	for (int i=0; i<sortList->head; i++) {
