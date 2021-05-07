@@ -47,7 +47,7 @@ void insertion_sort(int n, int *A) {
 		A[j+1] = k;
 	}
 }
-
+/*
 static void merge(int s1, int e1, int s2, int e2, int *A, int *B) {
 	int l1 = e1-s1;
 	int l2 = e2-s2;
@@ -61,8 +61,8 @@ static void merge(int s1, int e1, int s2, int e2, int *A, int *B) {
 	if (l1 > l2) {
 		B[e2] = A[e1];
 	}
-}
-
+}*/
+/*
 static void merge_sort_recr(int start, int end, int *A, int *B) {
 	if (start == end) return;
 	else if (start == end-1) {
@@ -78,8 +78,9 @@ static void merge_sort_recr(int start, int end, int *A, int *B) {
 		merge_sort_recr(s2, e2, A, B);
 		merge(s1, e1, s2, e2, A, B);
 	}
-}
+}*/
 
+/*
 void merge_sort(int n, int *A) {
 	int s1 = 0;
 	int e1 = n/2;
@@ -91,7 +92,7 @@ void merge_sort(int n, int *A) {
 	merge(s1, e1, s2, e2, A, B);
 	free(A);
 	A = B;
-}
+}*/
 
 bool is_sorted_asc(int n, int *A) {
 	for (int i=0; i<n-1; i++) {

@@ -23,8 +23,7 @@ void line_test(SDL_Renderer *renderer) {
 	}
 }
 
-int main(int argc, char **argv) {
-	srandom(time(NULL));
+void plotter_test() {
 	DataSet *ds = new_DataSet("Test");
 	DataSet_add(ds, new_Point(50, 80287));
 	DataSet_add(ds, new_Point(100, 308221));
@@ -120,3 +119,36 @@ int main(int argc, char **argv) {
 	plot(ds, "Scatter Chart Example");
 	destroy_DataSet(ds);
 }
+
+int main(int argc, char **argv) {
+	if (init_graphics() == -1) return -1;
+	SDL_Window *win = create_SDL_window("Bresenham Circle Test", 600, 400);
+	if (win == NULL) return -1;
+
+	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+	const SDL_Rect screen = {0, 0, 600, 400};
+	SDL_RenderFillRect(renderer, &screen);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
+	line_test(renderer);
+
+	SDL_RenderPresent(renderer);
+
+	SDL_Event e;
+	int quit = 1;
+	while (quit != 0) {
+		while (SDL_PollEvent(&e) != 0) {
+			if (e.type == SDL_QUIT) {
+				quit = 0;
+				break;
+			}
+		}
+	}
+	SDL_DestroyWindow(win);
+	TTF_Quit();
+	SDL_Quit();
+	return 0;
+}
+
