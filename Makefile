@@ -1,8 +1,12 @@
 CPPC = clang++
-CPPFLAGS = -std=c++14 -Wall 
+CPPFLAGS = -std=c++14 -Wall
+
+SRCDIR = src
+BINDIR = bin
 
 %.cpp:
-	$(CPPC) $(CPPFLAGS) $@ -o bin/$(notdir $@)
+	$(CPPC) $(CPPFLAGS) $(shell find $(SRCDIR) -name $(@)) -o $(BINDIR)/$@
 
-clean:
-	rm -rf bin/*
+%.py:
+	cp $(shell find $(SRCDIR) -name $@) $(BINDIR)/$@
+	chmod +x $(BINDIR)/$@
