@@ -1,0 +1,15 @@
+- bellman ford
+- topological sort
+- connected components
+- all pairs shortest paths
+- SSSP DAG (relaxation)
+- floyd warshall
+- spanning tree
+  - kruskal
+  - prim
+- disjoint set union and union find
+- floyd algorithm
+- kosaraju
+- eulerian and hamiltonian tour
+- ford fulkerson (max flow min cut)
+
