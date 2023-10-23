@@ -1,3 +1,5 @@
 bin
 __pycache__
 *.swp
+include
+compile_flags.txt

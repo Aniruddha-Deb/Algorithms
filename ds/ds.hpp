@@ -6,15 +6,15 @@ struct FenwickTree {
     vector<T> tree;
 
     FenwickTree(vector<T>& data) {
-        fenwick[0] = data[0];
-        for (int i = 1; i < data.size(); i++) fenwick[i] = fenwick[i-1] + a[i];
+        tree[0] = data[0];
+        for (int i = 1; i < data.size(); i++) tree[i] = tree[i-1] + data[i];
 
-        for (int i = a.size()-1; i > 0; i--) {
+        for (int i = data.size()-1; i > 0; i--) {
             int lower_i = (i & (i+1)) - 1;
-            if (lower_i >= 0) fenwick[i] -= fenwick[lower_i];
+            if (lower_i >= 0) tree[i] -= tree[lower_i];
         }        
     }
-}
+};
 
 namespace ds {
     
@@ -48,6 +48,6 @@ namespace ds {
     // TC: O(logn)
     template<typename T>
     void query_fenwick(vector<T>& fenwick, int l, int r) {
-        return prefix_fenwick(r) - prefix_fenwick(l);
+        return prefix_fenwick(fenwick, r) - prefix_fenwick(fenwick, l);
     }
 }
