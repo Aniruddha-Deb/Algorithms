@@ -1,12 +1,8 @@
-CPPC = clang++
-CPPFLAGS = -std=c++14 -Wall
+CPPC = g++-13
+CPPFLAGS = -std=c++17 -Wl,-ld_classic
 
 SRCDIR = src
 BINDIR = bin
 
-%.cpp:
-	$(CPPC) $(CPPFLAGS) $(shell find $(SRCDIR) -name $(@)) -o $(BINDIR)/$@
-
-%.py:
-	cp $(shell find $(SRCDIR) -name $@) $(BINDIR)/$@
-	chmod +x $(BINDIR)/$@
+%:
+	$(CPPC) $(CPPFLAGS) $@.cpp -o $(BINDIR)/$(notdir $@)
